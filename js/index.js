@@ -350,7 +350,6 @@ function send() {
     // 代码类型
     let codeType;
     SSE_SOURCE.addEventListener('message', function (event) {
-        console.log(event);
         let data = JSON.parse(event.data);
         let role = data.role;
         switch (role) {
