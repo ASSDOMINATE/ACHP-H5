@@ -8,7 +8,7 @@ $(function () {
     init();
 })
 
-let BASE_URL = 'http://8.219.111.33/';
+let BASE_URL = 'http://www.thadhff.site/';
 let REQUEST_TOKEN = null;
 
 // 返回结果Code常量
@@ -122,10 +122,13 @@ function recharge() {
         showAlert('请登陆后使用');
         return;
     }
+    if(VALID_CARD){
+        showAlert('当前已有会员卡正在使用中');
+        return;
+    }
     let $exchangeCode = $('#exchange-code');
     let $exchangeInputs = $('#exchange-inputs');
     let $topMessage = $('#top-message');
-    let $rechargeButton = $('#recharge-button');
 
     // 开启兑换状态
     if (!START_RECHARGE) {
@@ -146,8 +149,14 @@ function recharge() {
         return;
     }
 
-    //TODO 兑换卡密接口
-    showAlert('兑换成功');
+    let param = {
+        'exchangeKey': exchangeCode
+    }
+    postRequest('api/card/exchangeCard', JSON.stringify(param), recharge_render);
+}
+
+function recharge_render(response) {
+    showAlert(response.msg);
 }
 
 let START_LOGIN = false;
@@ -230,8 +239,39 @@ function setLoginPage_render(response) {
     }
     let user = response.data;
     window.localStorage.setItem(CACHE_USER_KEY, JSON.stringify(user));
-    // TODO check user state
-    $('#top-message').text('您还不是付费用户，赶快去购卡充值吧！').show();
+    getRequest('api/card/checkUserCard', null, checkUserCard_render);
+
+}
+
+let VALID_CARD = false;
+
+function checkUserCard_render(response) {
+    let $message = $('#top-message');
+    $message.show();
+    if (!response.data) {
+        $message.text('您还不是付费用户，赶快去购卡充值吧！');
+        return;
+    }
+    switch (response.data.cardTypeCode) {
+        case 1:
+            VALID_CARD = new Date().getTime() < response.data.expireTime;
+            if(!VALID_CARD){
+                $message.text('您的会员卡已到期');
+                return;
+            }
+            break;
+        case 2:
+            VALID_CARD = remainCount > 0;
+            if(!VALID_CARD){
+                $message.text('您的会员卡次数已使用完');
+                return;
+            }
+            break;
+        default:
+            VALID_CARD = false;
+            break;
+    }
+    $message.text(response.data.info);
 }
 
 /**
