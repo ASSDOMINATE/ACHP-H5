@@ -5,10 +5,14 @@ $(function () {
     $('#recharge-button').click(recharge);
     $('#register-button').click(register);
     $('#dark-mode-button').click(changeMode);
+    $('#buy-button').click(showBuyList);
+    $('#hidden-background').click(closeHidden);
+    $('#start-pay-button').click(showPayCode);
     init();
+    setMode();
 })
 
-let BASE_URL = 'http://www.thadhff.site/';
+let BASE_URL = 'https://www.thadhff.site/';
 let REQUEST_TOKEN = null;
 
 // 返回结果Code常量
@@ -18,20 +22,26 @@ const RESPONSE_SUCCESS_CODE = 200;
 //缓存
 const CACHE_USER_KEY = 'achp:cache:user';
 const CACHE_TOKEN_KEY = 'achp:cache:token';
+const CACHE_DARK_MODE = 'dark:mode';
 
-let CURRENT_DARK_MODE = false;
+let CURRENT_DARK_MODE = window.localStorage.getItem(CACHE_DARK_MODE) === 'true';
 
-function changeMode() {
+function setMode() {
     if (CURRENT_DARK_MODE) {
-        $('#dark-mode-button .light-icon').hide();
-        $('#dark-mode-button .dark-icon').show();
-        $('body').removeClass('dark-mode');
-    } else {
         $('#dark-mode-button .light-icon').show();
         $('#dark-mode-button .dark-icon').hide();
         $('body').addClass('dark-mode');
+    } else {
+        $('#dark-mode-button .light-icon').hide();
+        $('#dark-mode-button .dark-icon').show();
+        $('body').removeClass('dark-mode');
     }
+}
+
+function changeMode() {
     CURRENT_DARK_MODE = !CURRENT_DARK_MODE;
+    window.localStorage.setItem(CACHE_DARK_MODE, CURRENT_DARK_MODE);
+    setMode();
 }
 
 function sendCopy() {
@@ -50,6 +60,111 @@ function copy(content) {
     showAlert('已复制到粘贴板');
 }
 
+function closeHidden() {
+    $('#hidden-background,#card-list-dialog').hide();
+    $('body').removeClass('disable-flow');
+}
+
+function closeCodeUrl() {
+    $('#pay-code-url').hide();
+}
+
+function showPayCode() {
+    let param = {
+        'cardId': payCardId,
+        'payType': 4
+    }
+    postRequest('api/card/createPayUrl', JSON.stringify(param), showPayCode_render);
+}
+
+let payUrl = 'weixin://wxpay/bizpayurl?pr=iYZExNuzz';
+let payCode = '';
+
+function showPayCode_render(response) {
+    if (response.code !== 200) {
+        showAlert(response.msg);
+        return;
+    }
+    payUrl = response.data.codeUrl;
+    payCode = response.data.partyOrderCode;
+    $('#pay-code-url').empty().show().qrcode({
+        text: payUrl
+    });
+    setTimeout(function () {
+        $('#pay-code-url').append(
+            '<div>' +
+            '<span>是否支付完成？</span>' +
+            '<div class="button" id="check-pay-order">是</div><div class="button" id="cancel-pay">否</div>' +
+            '</div> ')
+        $("#check-pay-order").click(checkPayOrder);
+        $("#cancel-pay").click(function () {
+            closeCodeUrl();
+        });
+    }, 3000);
+}
+
+function checkPayOrder() {
+    let param = {
+        'orderCode': payCode,
+        'payType': 4
+    }
+    postRequest('api/card/checkPayOrder', JSON.stringify(param), checkPayOrder_render);
+}
+
+function checkPayOrder_render(response) {
+    if (response.code !== 200) {
+        showAlert(response.msg);
+        return
+    }
+    showAlert('支付成功');
+    checkUserCard();
+    closeHidden();
+}
+
+function showBuyList() {
+    $('#hidden-background,#card-list-dialog').show();
+    $('body').addClass('disable-flow');
+    getRequest('api/card/getEnableCard', '', showBuyList_render);
+}
+
+let cardList = [];
+let payCardId = 0;
+
+function showBuyList_render(response) {
+    let $area = $('#card-list-area');
+    $area.empty();
+    cardList = response.data;
+    let index = 0;
+    response.data.forEach(function (item) {
+        let $card = $('<div class="one-card" card-index="' + index + '">' +
+            '<div class="card-name">' + item.name + '</div><div style="color:#ff6363;">￥<span class="card-price">' + item.balance + '<span></div>' +
+            '<div class="card-icon">' +
+            '<svg t="1682065354468" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1519" width="200" height="200"><path d="M737 865H287.2v63.55H737V865zM864 162v509.66H162V162h702m64-64H98v637.66h830V98z" fill="#333333" p-id="1520"></path><path d="M544.45 735.67v128.88H480V735.67h64.45m64-64H416v256.88h192.45V671.67zM576.11 549.05H447.95v63.91h128.16v-63.91z" fill="#333333" p-id="1521"></path></svg>' +
+            '<svg t="1682065383962" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1669" width="200" height="200"><path d="M767.75 162.15v702.14H256.04V162.15h511.71m64-64H192.04v830.14h639.71V98.15z" fill="#333333" p-id="1670"></path><path d="M575.35 750.07H447.32v63.58h128.03v-63.58zM657.62 271v368H367.89V271h289.73m58-58H309.89v484h405.72V213h0.01z" fill="#333333" p-id="1671"></path></svg>' +
+            '</div>' +
+            '</div>')
+        $('#card-list-area').append($card);
+        index++;
+        $card.click(changeCard);
+    });
+    let $selectCard = $area.find('.one-card').eq(0);
+    $selectCard.addClass('select-card');
+    selectCard(0);
+}
+
+function changeCard() {
+    $('.one-card').removeClass('select-card');
+    $(this).addClass('select-card');
+    let index = $(this).attr('card-index');
+    selectCard(index);
+    closeCodeUrl();
+}
+
+function selectCard(index) {
+    $('#card-list-info').text(cardList[index].desr);
+    $('#pay-card-price').text(cardList[index].balance);
+    payCardId = cardList[index].id;
+}
 
 let START_REGISTER = false;
 
@@ -122,7 +237,7 @@ function recharge() {
         showAlert('请登陆后使用');
         return;
     }
-    if(VALID_CARD){
+    if (VALID_CARD) {
         showAlert('当前已有会员卡正在使用中');
         return;
     }
@@ -157,6 +272,7 @@ function recharge() {
 
 function recharge_render(response) {
     showAlert(response.msg);
+    checkUserCard();
 }
 
 let START_LOGIN = false;
@@ -165,14 +281,14 @@ let START_LOGIN = false;
  * 登陆接口
  */
 function login() {
-    let $loginInputs = $('#login-inputs');
-    let $registerInputs = $('#register-inputs');
     let $loginButton = $('#login-button');
     // 已登陆状态直接清除状态退出
     if ($loginButton.text() === '退出') {
         setLogoutPage();
         return;
     }
+    let $loginInputs = $('#login-inputs');
+    let $registerInputs = $('#register-inputs');
     if (START_REGISTER) {
         $loginInputs.show();
         $registerInputs.hide();
@@ -192,7 +308,8 @@ function login() {
     let pwd = $('#login-pwd').val();
     let param = {
         'sign': sign,
-        'pwd': pwd
+        'pwd': pwd,
+        'platform': 1
     }
     postRequest('api/auth/login', JSON.stringify(param), login_render);
 }
@@ -226,7 +343,7 @@ function init() {
 function setLoginPage() {
     $('#login-button').text('退出');
     $('#login-inputs,#exchange-inputs,#register-button,#register-inputs').hide();
-    $('#login-button,#recharge-button').show();
+    $('#login-button,#recharge-button,#buy-button').show();
     $('#top-message').text('正在检查账号状态 ...').show();
     getRequest('api/auth/user', null, setLoginPage_render);
 }
@@ -239,38 +356,43 @@ function setLoginPage_render(response) {
     }
     let user = response.data;
     window.localStorage.setItem(CACHE_USER_KEY, JSON.stringify(user));
-    getRequest('api/card/checkUserCard', null, checkUserCard_render);
-
+    checkUserCard();
 }
 
+
 let VALID_CARD = false;
+
+function checkUserCard() {
+    getRequest('api/card/checkUserCard', null, checkUserCard_render);
+}
 
 function checkUserCard_render(response) {
     let $message = $('#top-message');
     $message.show();
     if (!response.data) {
+        VALID_CARD = false;
         $message.text('您还不是付费用户，赶快去购卡充值吧！');
         return;
     }
     switch (response.data.cardTypeCode) {
         case 1:
             VALID_CARD = new Date().getTime() < response.data.expireTime;
-            if(!VALID_CARD){
+            if (!VALID_CARD) {
                 $message.text('您的会员卡已到期');
                 return;
             }
             break;
         case 2:
             VALID_CARD = remainCount > 0;
-            if(!VALID_CARD){
+            if (!VALID_CARD) {
                 $message.text('您的会员卡次数已使用完');
                 return;
             }
             break;
         default:
-            VALID_CARD = false;
             break;
     }
+    VALID_CARD = false;
     $message.text(response.data.info);
 }
 
@@ -284,8 +406,9 @@ function setLogoutPage() {
     START_LOGIN = false;
     START_RECHARGE = false;
     $('#login-button').text('登陆');
+    $('#top-message').text('请先注册或登陆使用');
     $('#register-button,#login-button,#top-message').show();
-    $('#login-inputs,#exchange-inputs,#recharge-button,#register-inputs').hide();
+    $('#login-inputs,#exchange-inputs,#recharge-button,#buy-button,#register-inputs').hide();
 }
 
 /**
@@ -389,7 +512,9 @@ function send() {
     let codeTime = false;
     // 代码类型
     let codeType;
+    let hasMessage = false;
     SSE_SOURCE.addEventListener('message', function (event) {
+        hasMessage = true;
         let data = JSON.parse(event.data);
         let role = data.role;
         switch (role) {
@@ -418,9 +543,10 @@ function send() {
                     }
                     // 3.2.2 不是代码标记 - 拼接代码
                     if (thisSignCount === 0) {
-                        $code.append('<span>' + content + '</span>');
+                        let $content = $('<span></span>')
+                        $content.text(content);
+                        $code.append($content);
                         $code.append($('#input-block'));
-                        toBottom();
                         break;
                     }
                     // 3.2.3 代码结束标记检查
@@ -437,9 +563,10 @@ function send() {
                 if (thisSignCount === 0) {
                     codeSignCount = 0;
                     codeType = null;
-                    $reply.append('<span>' + content + '</span>');
+                    let $content = $('<span></span>')
+                    $content.text(content);
+                    $reply.append($content);
                     $reply.append($('#input-block'));
-                    toBottom();
                     break;
                 }
                 // 3.代码开始标记检查
@@ -460,19 +587,30 @@ function send() {
                 // 对话结束标记，返回对话ID
                 SSE_SOURCE.close();
                 refreshSendState('', '请输入');
+                toBottom();
                 break;
         }
     }, false);
 
     SSE_SOURCE.addEventListener('error', function (event) {
         // 连接出现异常
-        console.log(event);
         SSE_SOURCE.close();
         refreshSendState(sentence, '请输入');
         // 显示提示消息
-        $reply.append('<span>网络出现问题，您可以点击发送重试，继续对话</span>');
+        $NowReply = $reply;
+        if (!hasMessage) {
+            getRequest('stream/chat/send' + '?' + uri, '', sendError)
+        } else {
+            $reply.append('<span>网络出现问题，您可以点击发送重试，继续对话</span>');
+        }
         toBottom();
     }, false);
+}
+
+let $NowReply = null;
+
+function sendError(response) {
+    $NowReply.append('<span>' + response.msg + '</span>');
 }
 
 function refreshSendState(inputValue, inputHolder) {
