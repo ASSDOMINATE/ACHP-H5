@@ -381,6 +381,7 @@ function checkUserCard_render(response) {
                 $message.text('您的会员卡已到期');
                 return;
             }
+            VALID_CARD = true;
             break;
         case 2:
             VALID_CARD = remainCount > 0;
@@ -388,12 +389,18 @@ function checkUserCard_render(response) {
                 $message.text('您的会员卡次数已使用完');
                 return;
             }
+            VALID_CARD = true;
             break;
         default:
+            VALID_CARD = false;
             break;
     }
-    VALID_CARD = false;
     $message.text(response.data.info);
+    if(VALID_CARD){
+        $('#recharge-button,#buy-button').hide();
+    }else{
+        $('#recharge-button,#buy-button').show();
+    }
 }
 
 /**
