@@ -243,15 +243,19 @@ html {
     position: fixed;
     top: 0;
     left: 0;
-    text-align: center;
     width: 100%;
 }
 
+#header-mid-area {
+    display: flex;
+    display: -webkit-flex; /* safari */
+    flex-wrap: wrap;
+    margin: 1rem auto !important;
+    justify-content: space-around;
+}
 
-#header div {
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
-    display: inline-block;
+
+#header-buttons,#header-mid-area {
     vertical-align: middle;
     line-height: 2rem;
 }
@@ -295,8 +299,7 @@ html {
     line-height: inherit;
     padding: 0.5rem 1rem;
     margin-right: 1rem;
-    width: 60%;
-    max-width: 55rem;
+    flex: 1;
 }
 
 #footer-line-icon {
@@ -311,9 +314,22 @@ html {
     width: 1rem;
     height: 1rem;
 }
+#header , #footer{
+    padding: 0 1rem;
+}
+
+#header-mid-area,#message-line,#footer-mid-area{
+    max-width: 980px;
+    width: 100%;
+    display: flex;
+    display: -webkit-flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin: 0 auto;
+    align-items: center;
+}
 
 #footer {
-
     background-color: #eeeeee;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
@@ -323,6 +339,11 @@ html {
     width: 100%;
     text-align: center;
     border-top: 1px solid #fcfcfc;
+
+    display: flex;
+    display: -webkit-flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
 }
 
 .title {
@@ -333,7 +354,7 @@ html {
 }
 
 #message-line {
-    margin-top: 7rem;
+    margin-top: 6rem;
     width: 100%;
     text-align: center;
     white-space: nowrap;
@@ -358,8 +379,7 @@ html {
 #chat-area {
     border-width: 1px;
     border-radius: 0.375rem;
-    width: 90%;
-    max-width: 1000px;
+    max-width: 980px;
     display: none;
     margin: 1rem auto 6rem;
 }
@@ -442,16 +462,18 @@ html {
     border-right: 1px solid #f1f1f1;
 }
 
+#register-pwd-2 {
+    border-right: 0 !important;
+}
+
 #top-message, #login-inputs, #exchange-inputs, #register-inputs {
     border-width: 1px;
     border-radius: 0.375rem;
-    margin-left: 0.5rem;
     margin-right: 0.4rem;
     padding: 0.5rem 0.75rem;
-    width: 55%;
     text-align: left;
-    max-width: 55rem;
     overflow: hidden;
+    flex: 1;
 }
 
 #message-line > div {
@@ -487,6 +509,11 @@ html {
     text-align: right;
 }
 
+svg.has-split {
+    border-right: 1px solid #dcd9d9;
+    padding-right: 0.3rem;
+    width: 1.55rem !important;
+}
 
 .dark-icon path {
     fill: #000;
@@ -496,17 +523,48 @@ html {
     fill: #fff;
 }
 
-#dark-mode-button {
-    width: 2.5rem;
+#download-app-button svg {
+    width: 1.25rem;
+    vertical-align: middle;
+    height: 1.25rem;
+}
+
+#download-app-button {
+    padding: 0 0.5rem;
+}
+
+#dark-mode-button,#download-app-button,#buy-button{
     height: 2.5rem;
     border: 1px solid #dcd9d9;
     border-radius: 0.5rem;
     cursor: pointer;
-    margin-left: 2rem;
+    text-align: center;
+    display: inline-block;
 }
 
-#dark-mode-button svg {
+#download-app-button path ,#buy-button path{
+    fill: #000;
+}
+
+
+.dark-mode #download-app-button path ,.dark-mode #buy-button path{
+    fill: #fff;
+}
+
+#buy-button{
+    width: 2.5rem;
+    margin-right: 0.75rem;
+}
+
+#dark-mode-button {
+    width: 2.5rem;
+    margin-right: 0.75rem;
+}
+
+
+#dark-mode-button svg ,#buy-button svg{
     width: 1.5rem;
+    height: 1.5rem;
     vertical-align: bottom;
 }
 
@@ -549,7 +607,7 @@ body.dark-mode {
     border-top-color: rgb(17 24 39 / var(--tw-border-opacity));
 }
 
-.dark-mode #dark-mode-button {
+.dark-mode #dark-mode-button, .dark-mode #download-app-button, .dark-mode svg.has-split ,.dark-mode #buy-button{
     --tw-border-opacity: 1;
     border-color: rgb(75 85 99 / var(--tw-border-opacity)) !important;
 }
@@ -681,7 +739,7 @@ body.dark-mode {
     background: #fffbec;
 }
 
-.dark-mode .one-card.select-card{
+.dark-mode .one-card.select-card {
     background: #ffe6b4;
     color: #733306;
 }
@@ -706,25 +764,25 @@ body.dark-mode {
 
 #pay-code-url {
     position: absolute;
-    top: 20%;
+    top: 2rem;
     width: 60%;
     left: 20%;
     border: 1px solid #e1e1e1;
     text-align: center;
     border-radius: 15px;
     background-color: #fff;
-    padding: 5%;
     display: none;
 }
 
-.disable-flow{
+.disable-flow {
     overflow: hidden;
 }
 
-#check-pay-order,#cancel-pay{
-    width: 30px;
+#check-pay-order, #cancel-pay {
+    padding: 0 8px;
 }
-#check-pay-order{
+
+#check-pay-order {
     margin-right: 5px;
 }
 
@@ -745,4 +803,13 @@ svg.icon path {
 
 span#pay-card-price {
     font-size: 20px;
+}
+
+.pay-help-info{
+    font-size: 18px;
+    font-weight: 300;
+}
+
+#pay-code-url canvas {
+    margin: 10px;
 }

@@ -8,9 +8,17 @@ $(function () {
     $('#buy-button').click(showBuyList);
     $('#hidden-background').click(closeHidden);
     $('#start-pay-button').click(showPayCode);
+    $('#download-app-button').click(toDownloadPage);
     init();
     setMode();
+    $(document).keydown(function (event) {
+        if (event.keyCode === 13) {
+            //执行的方法
+            document.getElementById("send-button").click();
+        }
+    });
 })
+
 
 let BASE_URL = 'https://www.thadhff.site/';
 let REQUEST_TOKEN = null;
@@ -36,6 +44,11 @@ function setMode() {
         $('#dark-mode-button .dark-icon').show();
         $('body').removeClass('dark-mode');
     }
+}
+
+
+function toDownloadPage() {
+    window.open('https://www.thadhff.site/supportEquipment.html');
 }
 
 function changeMode() {
@@ -77,7 +90,7 @@ function showPayCode() {
     postRequest('api/card/createPayUrl', JSON.stringify(param), showPayCode_render);
 }
 
-let payUrl = 'weixin://wxpay/bizpayurl?pr=iYZExNuzz';
+let payUrl = '';
 let payCode = '';
 
 function showPayCode_render(response) {
@@ -87,20 +100,24 @@ function showPayCode_render(response) {
     }
     payUrl = response.data.codeUrl;
     payCode = response.data.partyOrderCode;
-    $('#pay-code-url').empty().show().qrcode({
+    $('#pay-code-url').empty().append("<div class='pay-help-info' style='margin-top:10px;'>" +
+        "打开微信扫一扫支付 " +
+        "<span style='font-size: 14px'>￥</span>" +
+        "<span style='color: #ff6363;font-size: 20px;font-weight: 500;'>" + payBalance + "<span/></div>")
+        .show().qrcode({
         text: payUrl
     });
     setTimeout(function () {
         $('#pay-code-url').append(
-            '<div>' +
+            '<div class="pay-help-info">' +
             '<span>是否支付完成？</span>' +
-            '<div class="button" id="check-pay-order">是</div><div class="button" id="cancel-pay">否</div>' +
+            '<div class="button" id="check-pay-order" style="margin-bottom:10px;">已完成</div><div class="button" id="cancel-pay">关闭</div>' +
             '</div> ')
         $("#check-pay-order").click(checkPayOrder);
         $("#cancel-pay").click(function () {
             closeCodeUrl();
         });
-    }, 3000);
+    }, 5000);
 }
 
 function checkPayOrder() {
@@ -129,6 +146,7 @@ function showBuyList() {
 
 let cardList = [];
 let payCardId = 0;
+let payBalance = 0;
 
 function showBuyList_render(response) {
     let $area = $('#card-list-area');
@@ -164,6 +182,7 @@ function selectCard(index) {
     $('#card-list-info').text(cardList[index].desr);
     $('#pay-card-price').text(cardList[index].balance);
     payCardId = cardList[index].id;
+    payBalance = cardList[index].balance;
 }
 
 let START_REGISTER = false;
@@ -174,10 +193,12 @@ function register() {
     if (!START_REGISTER) {
         $loginInputs.hide();
         $('#top-message').hide();
+        $('#login-button').hide();
         $registerInputs.show();
         START_REGISTER = true;
         return;
     }
+    $('#login-button').show();
     START_REGISTER = false;
     let sign = $('#register-sign').val();
     let pwd1 = $('#register-pwd-1').val();
@@ -396,10 +417,10 @@ function checkUserCard_render(response) {
             break;
     }
     $message.text(response.data.info);
-    if(VALID_CARD){
-        $('#recharge-button,#buy-button').hide();
-    }else{
-        $('#recharge-button,#buy-button').show();
+    if (VALID_CARD) {
+        $('#recharge-button').hide();
+    } else {
+        $('#recharge-button').show();
     }
 }
 
